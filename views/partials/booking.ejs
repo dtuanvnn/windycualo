@@ -1,0 +1,30 @@
+<section class="booking-bar">
+  <form id="bookingForm" onsubmit="handleBooking(event)">
+    <div class="form-group">
+      <label data-vi="Ngày Đến" data-en="Check-In">Ngày Đến</label>
+      <input type="date" id="checkin" required>
+    </div>
+    <div class="form-group">
+      <label data-vi="Ngày Đi" data-en="Check-Out">Ngày Đi</label>
+      <input type="date" id="checkout" required>
+    </div>
+    <div class="form-group">
+      <label data-vi="Số Người" data-en="Guests">Số Người</label>
+      <select id="guests">
+        <option value="1">1 Người lớn / Single</option>
+        <option value="2" selected>2 Người lớn / 2 Adults</option>
+        <option value="4">Gia đình / Family Suite</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label data-vi="Loại Phòng" data-en="Room Type">Loại Phòng</label>
+      <select id="roomType">
+        <option value="Standard" data-vi="Hạng Phòng Tiêu Chuẩn" data-en="Standard Cozy">Hạng Phòng Tiêu Chuẩn</option>
+        <option value="Deluxe" data-vi="Hạng Phòng Deluxe Hướng Biển" data-en="Deluxe Ocean View">Hạng Phòng Deluxe Hướng Biển</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <button type="submit" class="btn-submit-booking" data-vi="Kiểm Tra Phòng" data-en="Check Rooms">Kiểm Tra Phòng</button>
+    </div>
+  </form>
+</section>

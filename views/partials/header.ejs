@@ -1,0 +1,27 @@
+<div class="topbar">
+  <div class="topbar-left">
+    <span data-vi="📍 Đường Bình Minh, TX Cửa Lò, Nghệ An" data-en="📍 Binh Minh Street, Cua Lo Beach, Nghe An">📍 Đường Bình Minh, TX Cửa Lò, Nghệ An</span>
+  </div>
+  <div class="topbar-right">
+    <button class="lang-btn active" onclick="switchLanguage('vi')">VI</button>
+    <button class="lang-btn" onclick="switchLanguage('en')">EN</button>
+  </div>
+</div>
+<nav>
+  <a href="#home" class="logo-text">WINDY HOTEL</a>
+  <ul class="nav-links">
+    <li><a href="#home" class="active" data-vi="Trang Chủ" data-en="Home">Trang Chủ</a></li>
+    <li><a href="#about" data-vi="Giới Thiệu" data-en="About Us">Giới Thiệu</a></li>
+    <li><a href="#rooms" data-vi="Loại Phòng" data-en="Rooms">Loại Phòng</a></li>
+    <li><a href="#amenities" data-vi="Tiện Ích" data-en="Amenities">Tiện Ích</a></li>
+    <li class="has-dropdown">
+      <a href="#news" data-vi="Tin Tức ▾" data-en="News ▾">Tin Tức ▾</a>
+      <ul class="dropdown">
+        <li><a href="#news" onclick="filterNews('promo')" data-vi="Khuyến Mãi" data-en="Promotions">Khuyến Mãi</a></li>
+        <li><a href="#news" onclick="filterNews('food')" data-vi="Ẩm Thực" data-en="Cuisine">Ẩm Thực</a></li>
+        <li><a href="#news" onclick="filterNews('travel')" data-vi="Du Lịch Cửa Lò" data-en="Cua Lo Travel">Du Lịch Cửa Lò</a></li>
+      </ul>
+    </li>
+    <li><a href="#contact" data-vi="Liên Hệ" data-en="Contact">Liên Hệ</a></li>
+  </ul>
+</nav>

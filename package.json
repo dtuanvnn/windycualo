@@ -1,0 +1,17 @@
+{
+  "name": "windy-hotel-cualo",
+  "version": "1.0.0",
+  "description": "Website Windy Hotel Cua Lo - Node.js Project",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ejs": "^3.1.10"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

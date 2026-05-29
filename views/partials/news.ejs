@@ -1,0 +1,31 @@
+<section id="news" class="section-padding bg-light">
+  <div class="container">
+    <div class="text-center">
+      <h3 class="section-subtitle" data-vi="BẢN TIN & SỰ KIỆN" data-en="NEWS & BLOGS">BẢN TIN & SỰ KIỆN</h3>
+      <h2 class="section-title" data-vi="Cẩm Nang Du Lịch & Khuyến Mãi" data-en="Travel Guides & Promotions">Cẩm Nang Du Lịch & Khuyến Mãi</h2>
+      <div class="divider"></div>
+      <div class="news-filters">
+        <button class="filter-btn active" onclick="filterNews('all')" data-vi="Tất Cả" data-en="All">Tất Cả</button>
+        <button class="filter-btn" onclick="filterNews('promo')" data-vi="Khuyến Mãi" data-en="Promotions">Khuyến Mãi</button>
+        <button class="filter-btn" onclick="filterNews('food')" data-vi="Ẩm Thực" data-en="Cuisine">Ẩm Thực</button>
+        <button class="filter-btn" onclick="filterNews('travel')" data-vi="Du Lịch Cửa Lò" data-en="Cua Lo Travel">Du Lịch Cửa Lò</button>
+      </div>
+    </div>
+    <div class="news-grid">
+      <% news.forEach(item => { %>
+        <div class="news-card" data-category="<%= item.cat %>">
+          <div class="news-img" style="background-image: url('<%= item.img %>')"></div>
+          <div class="news-body">
+            <span class="news-cat" data-vi="<%= item.catVi %>" data-en="<%= item.catEn %>"><%= item.catVi %></span>
+            <h3 class="news-title" data-vi="<%= item.titleVi %>" data-en="<%= item.titleEn %>"><%= item.titleVi %></h3>
+            <p class="news-excerpt" data-vi="<%= item.excerptVi %>" data-en="<%= item.excerptEn %>"><%= item.excerptVi %></p>
+            <div class="news-footer">
+              <span>📅 <%= item.date %></span>
+              <a href="#" class="readmore" data-vi="Đọc tiếp →" data-en="Read More →">Đọc tiếp →</a>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</section>
