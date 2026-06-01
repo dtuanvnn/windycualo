@@ -208,6 +208,64 @@ app.get('/admin/logout', (req, res) => {
   res.redirect('/admin/login');
 });
 
+// ─────────────────────────────────────────────────────────────────
+// CHỨC NĂNG DÀNH CHO ADMIN
+// ─────────────────────────────────────────────────────────────────
+
+// 1. API: Lấy danh sách TOÀN BỘ đơn đặt phòng để hiển thị ra bảng Admin
+app.get('/api/admin/bookings', async (req, res) => {
+  try {
+    // Sắp xếp đơn mới nhất (createdAt: -1) lên đầu bảng
+    const bookings = await Booking.find().sort({ createdAt: -1 });
+    return res.json({ success: true, data: bookings });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 2. API: Cập nhật trạng thái đơn (Duyệt / Hủy / Nhận phòng...)
+app.patch('/api/admin/bookings/:id/status', async (req, res) => {
+  const { id } = req.params;      // Lấy ID đơn từ đường dẫn URL
+  const { status } = req.body;    // Lấy trạng thái mới truyền lên (ví dụ: 'Confirmed' hoặc 'Cancelled')
+
+  // Kiểm tra trạng thái gửi lên có nằm trong danh sách Enum của Booking.js không
+  const validStatuses = ['Pending', 'Confirmed', 'Cancelled', 'CheckedIn', 'CheckedOut'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ success: false, error: 'Trạng thái chuyển đổi không hợp lệ!' });
+  }
+
+  try {
+    // Tìm đơn theo ID và cập nhật status mới
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      id,
+      { status: status },
+      { new: true, runValidators: true } // {new: true} để trả về data mới nhất sau khi sửa
+    );
+
+    if (!updatedBooking) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy đơn đặt phòng này!' });
+    }
+
+    console.log(`🔄 [ADMIN] Đã đổi trạng thái đơn [${id}] sang thành công: ${status}`);
+
+    // 🔥 TÍNH NĂNG NÂNG CAO (Tùy chọn): Tự động gửi email chúc mừng cho khách khi được Admin duyệt
+    if (status === 'Confirmed' && updatedBooking.email) {
+       console.log(`📧 Đang gửi email xác nhận cho khách hàng: ${updatedBooking.email}`);
+       // Bạn có thể dùng đoạn code transporter.sendMail() ở đây để thông báo cho khách "Phòng của bạn đã được xác nhận thành công!"
+    }
+
+    return res.json({
+      success: true,
+      message: `Đã cập nhật trạng thái đơn thành công sang: ${status}`,
+      data: updatedBooking
+    });
+
+  } catch (error) {
+    console.error('❌ Lỗi duyệt đơn:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log('Server Windy Hotel Cửa Lò đang chạy tại: http://localhost:' + PORT);
 });
