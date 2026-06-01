@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Danh Sách Đặt Phòng - Windy Hotel Cửa Lò</title>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Be Vietnam Pro', sans-serif; margin: 0; padding: 20px; background-color: #FAFAF8; color: #2C1A0A; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #C9922B; padding-bottom: 15px; }
+    h1 { margin: 0; color: #1A0A0A; font-size: 1.8rem; }
+    .btn-logout { padding: 8px 16px; background-color: #8B1A1A; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; font-weight: 500; }
+    .btn-logout:hover { background-color: #C0392B; }
+    .table-container { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow-x: auto; border: 1px solid rgba(201,146,43,0.15); }
+    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 800px; }
+    th { background-color: #F8F0E8; color: #1A0A0A; padding: 14px; font-weight: 600; border-bottom: 2px solid rgba(201,146,43,0.2); }
+    td { padding: 14px; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+    tr:hover { background-color: #FAF6F0; }
+    .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; background-color: #FFF3CD; color: #856404; } /* Tạm thời để mặc định Chờ xử lý */
+    .phone-link { color: #C9922B; font-weight: 600; text-decoration: none; }
+    .no-data { text-align: center; padding: 40px; color: #888; font-style: italic; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>📊 Danh Sách Đặt Phòng Trực Tuyến (<%= bookings.length %> đơn)</h1>
+    <a href="/admin/logout" class="btn-logout">🚪 Đăng xuất</a>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>STT</th>
+          <th>Thời gian đặt</th>
+          <th>Khách hàng</th>
+          <th>Số điện thoại</th>
+          <th>Loại phòng</th>
+          <th>Ngày nhận phòng</th>
+          <th>Ngày trả phòng</th>
+          <th>Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (bookings.length === 0) { %>
+          <tr>
+            <td colspan="8" class="no-data">Chưa có dữ liệu đơn đặt phòng nào trong Database.</td>
+          </tr>
+        <% } else { %>
+          <% bookings.forEach((item, index) => { %>
+            <tr>
+              <td><%= index + 1 %></td>
+              <td><%= new Date(item.createdAt).toLocaleString('vi-VN') %></td>
+              <td><strong><%= item.fullName %></strong></td>
+              <td><a href="tel:<%= item.phone %>" class="phone-link"><%= item.phone %></a></td>
+              <td><%= item.roomName || item.roomType %></td>
+              <td><%= new Date(item.checkIn || item.checkin).toLocaleDateString('vi-VN') %></td>
+              <td><%= new Date(item.checkOut || item.checkout).toLocaleDateString('vi-VN') %></td>
+              <td><span class="status-badge">Mới (Chờ ĐT)</span></td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+</body>
+</html>

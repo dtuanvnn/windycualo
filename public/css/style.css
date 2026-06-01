@@ -98,3 +98,95 @@ nav { position: sticky; top: 0; background: rgba(26, 10, 10, 0.96); backdrop-fil
 .contact-form input, .contact-form textarea { width: 100%; padding: 11px; margin-bottom: 12px; border: 1px solid var(--border); background: var(--white); outline: none; }
 
 footer { background: #0D0404; color: var(--gold-light); text-align: center; padding: 20px; font-size: 13px; border-top: 1px solid var(--border); }
+/* ==========================================================================
+   STYLE LẠI PHẦN GIỚI THIỆU (ABOUT SECTION) ĐẸP & SANG TRỌNG
+   ========================================================================== */
+
+.about-section {
+  padding: 80px 0;
+  background-color: var(--cream); /* Tận dụng màu nền kem sang trọng có sẵn */
+}
+
+.about-section .container {
+  max-width: 800px; /* VÀNG: Giới hạn chiều rộng để dòng chữ không bị trải dài hết màn hình gây mỏi mắt */
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.about-section .section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.6rem;
+  color: var(--navy);
+  text-align: center;
+  margin-bottom: 48px;
+  position: relative;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* Thêm nét gạch vàng tinh tế dưới tiêu đề */
+.about-section .section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 2px;
+  background-color: var(--gold);
+}
+
+/* Khối nội dung đoạn văn */
+.about-content {
+  text-align: justify; /* Căn đều 2 bên giúp khối văn bản vuông vắn, chuyên nghiệp */
+  text-justify: inter-word;
+}
+
+.about-content p {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 1.05rem;     /* Kích thước chữ vừa vặn, dễ đọc */
+  line-height: 1.85;      /* THOÁNG: Khoảng cách giữa các dòng lý tưởng cho bài đọc dài */
+  color: var(--text-light);/* Màu chữ nâu đen nhẹ, giảm độ tương phản gắt gây nhức mắt */
+  margin-bottom: 28px;    /* RÕ RÀNG: Khoảng cách giữa các đoạn văn tách biệt hẳn hoi */
+  letter-spacing: 0.2px;  /* Độ giãn chữ vừa phải */
+}
+
+/* Tạo điểm nhấn cho ĐOẠN VĂN MỞ ĐẦU (Intro Paragraph) */
+.about-content p:first-of-type {
+  font-size: 1.15rem;     /* Chữ to hơn một chút */
+  color: var(--text);      /* Màu đậm hơn */
+  font-weight: 500;       /* Hơi đậm hơn để dẫn dắt người đọc */
+  line-height: 1.75;
+}
+
+/* Đoạn cuối cùng loại bỏ margin để không làm lệch padding của toàn section */
+.about-content p:last-of-type {
+  margin-bottom: 0;
+}
+
+
+/* ─── TỐI ƯU HIỂN THỊ TRÊN ĐIỆN THOẠI (RESPONSIVE) ─── */
+@media (max-width: 768px) {
+  .about-section {
+    padding: 50px 0;
+  }
+  
+  .about-section .section-title {
+    font-size: 2rem;
+    margin-bottom: 32px;
+  }
+  
+  .about-content {
+    text-align: left; /* Trên mobile bắt buộc để canh trái để chữ không bị kéo dãn xa nhau bất thường */
+  }
+  
+  .about-content p {
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-bottom: 20px; /* Thu hẹp khoảng cách một chút trên màn hình nhỏ */
+  }
+
+  .about-content p:first-of-type {
+    font-size: 1.08rem;
+  }
+}
