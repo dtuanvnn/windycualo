@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -8,6 +9,20 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// --- CẤU HÌNH GỬI MAIL (GMAIL) ---
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // Bắt buộc phải là false đối với cổng 587
+  auth: {
+    user: 'windyhotelcualo@gmail.com',
+    pass: 'gtic hhlc agcd fjer' // <--- Điền 16 ký tự "Mật khẩu ứng dụng" của Google vào đây
+  },
+  tls: {
+    rejectUnauthorized: false // Bỏ qua kiểm tra chứng chỉ nếu chạy ở local/môi trường dev
+  }
+});
 
 // Giả lập Database Tin tức cho Sub-menu (Khuyến mãi, Ẩm thực, Địa điểm du lịch Cửa Lò)
 const newsData = [
@@ -42,11 +57,56 @@ app.get('/', (req, res) => {
 });
 
 app.post('/api/booking', (req, res) => {
-  console.log('Yêu cầu đặt phòng:', req.body);
+  const { fullName, phone, checkin, checkout, roomType } = req.body;
+
+  // ─── THÊM VÀO ĐÂY: VALIDATE PHÍA SERVER ───
+  const vnmPhoneRegex = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
+  
+  if (!phone || !vnmPhoneRegex.test(phone.trim())) {
+    console.log(`❌ Yêu cầu bị chặn do SĐT không hợp lệ: ${phone}`);
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Số điện thoại không đúng định dạng di động Việt Nam!' 
+    });
+  }
+  // ──────────────────────────────────────────
+
+  console.log('📬 Nhận yêu cầu đặt phòng mới từ:', fullName, '-', phone);
+
+  // Thiết lập nội dung Email thông báo
+  const mailOptions = {
+    from: 'windyhotelcualo@gmail.com',
+    to: 'windyhotelcualo@gmail.com', // Gửi về chính mình để quản lý khách sạn tiếp nhận
+    subject: `[WEBSITE ĐẶT PHÒNG] - Khách hàng: ${fullName.toUpperCase()}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #C9922B; padding: 20px;">
+        <h2 style="color: #8B1A1A; border-bottom: 2px solid #C9922B; padding-bottom: 10px;">YÊU CẦU ĐẶT PHÒNG MỚI</h2>
+        <p><b>Họ và tên khách hàng:</b> ${fullName}</p>
+        <p><b>Số điện thoại:</b> <a href="tel:${phone}">${phone}</a></p>
+        <p><b>Hạng phòng lựa chọn:</b> ${roomType}</p>
+        <p><b>Ngày nhận phòng (Check-in):</b> ${checkin}</p>
+        <p><b>Ngày trả phòng (Check-out):</b> ${checkout}</p>
+        <hr style="border: 0; border-top: 1px solid #eee;">
+        <p style="font-size: 12px; color: #666;">Hệ thống thông báo tự động từ Website Windy Hotel Cửa Lò.</p>
+      </div>
+    `
+  };
+
+  // Thực hiện gửi thư bất đồng bộ
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('❌ Lỗi gửi email thông báo:', error);
+      // Bạn vẫn có thể báo thành công cho khách hoặc báo lỗi hệ thống tùy ý
+    } else {
+      console.log('🚀 Email thông báo đặt phòng đã gửi thành công:', info.response);
+    }
+  });
+
+  // Trả về kết quả dạng JSON để file main.js nhận được và hiển thị alert cho khách
   res.json({
     success: true,
-    messageVi: 'Gửi yêu cầu kiểm tra phòng thành công! Chúng tôi sẽ liên hệ lại ngay.',
-    messageEn: 'Booking request sent successfully! We will contact you shortly.'
+    messageVi: 'Cảm ơn bạn! Yêu cầu đặt phòng đã được hệ thống ghi nhận. Chúng tôi sẽ liên hệ lại qua điện thoại trong ít phút.',
+    messageEn: 'Thank you! Your booking request has been sent. We will contact you via phone shortly.'
   });
 });
 
