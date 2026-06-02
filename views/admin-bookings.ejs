@@ -11,6 +11,10 @@
     h1 { margin: 0; color: #1A0A0A; font-size: 1.8rem; }
     .btn-logout { padding: 8px 16px; background-color: #8B1A1A; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; font-weight: 500; }
     .btn-logout:hover { background-color: #C0392B; }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .nav-link { padding: 8px 16px; color: #C9922B; text-decoration: none; border-radius: 4px; font-size: 0.9rem; font-weight: 500; border: 1px solid #C9922B; }
+    .nav-link:hover { background-color: #C9922B; color: white; }
+    .nav-link.active { background-color: #C9922B; color: white; }
     .table-container { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow-x: auto; border: 1px solid rgba(201,146,43,0.15); }
     table { width: 100%; border-collapse: collapse; text-align: left; min-width: 800px; }
     th { background-color: #F8F0E8; color: #1A0A0A; padding: 14px; font-weight: 600; border-bottom: 2px solid rgba(201,146,43,0.2); }
@@ -51,13 +55,45 @@
     font-size: 13px;
     display: inline-block;
 }
+
+.source-website {
+    background-color: #e2e3f1;
+    color: #3b3f8c;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 12px;
+    display: inline-block;
+}
+.source-bookingcom {
+    background-color: #dff0fe;
+    color: #003580;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 12px;
+    display: inline-block;
+}
+.source-facebook {
+    background-color: #e7f0ff;
+    color: #1877F2;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 12px;
+    display: inline-block;
+}
   </style>
 </head>
 <body>
 
   <div class="header">
-    <h1>📊 Danh Sách Đặt Phòng Trực Tuyến (<%= bookings.length %> đơn)</h1>
-    <a href="/admin/logout" class="btn-logout">🚪 Đăng xuất</a>
+    <h1>Danh Sách Đặt Phòng Trực Tuyến (<%= bookings.length %> đơn)</h1>
+    <div class="header-actions">
+      <a href="/admin/bookings" class="nav-link active">Đặt phòng</a>
+      <a href="/admin/rooms" class="nav-link">Quản lý phòng</a>
+      <a href="/admin/logout" class="btn-logout">Đăng xuất</a>
+    </div>
   </div>
 
   <div class="table-container">
@@ -66,6 +102,7 @@
         <tr>
           <th>STT</th>
           <th>Thời gian đặt</th>
+          <th>Nguồn đặt</th>
           <th>Khách hàng</th>
           <th>Số điện thoại</th>
           <th>Loại phòng</th>
@@ -77,7 +114,7 @@
       <tbody>
         <% if (bookings.length === 0) { %>
           <tr>
-            <td colspan="8" class="no-data">Chưa có dữ liệu đơn đặt phòng nào trong Database.</td>
+            <td colspan="10" class="no-data">Chưa có dữ liệu đơn đặt phòng nào trong Database.</td>
           </tr>
         <% } else { %>
           <% bookings.forEach((item, index) => { 
@@ -85,7 +122,21 @@
             <tr>
               <td><%= index + 1 %></td>
               <td><%= new Date(item.createdAt).toLocaleString('vi-VN') %></td>
-              <td><strong><%= item.fullName %></strong></td>
+              <td>
+                <% if (item.source === 'Booking.com') { %>
+                  <span class="source-bookingcom">Booking.com</span>
+                <% } else if (item.source === 'Facebook') { %>
+                  <span class="source-facebook">Facebook</span>
+                <% } else { %>
+                  <span class="source-website">Website</span>
+                <% } %>
+              </td>
+              <td>
+                <strong><%= item.fullName %></strong>
+                <% if (item.externalBookingId) { %>
+                  <br><small style="color:#666;">Ref: <%= item.externalBookingId %></small>
+                <% } %>
+              </td>
               <td><a href="tel:<%= item.phone %>" class="phone-link"><%= item.phone %></a></td>
               <td><%= item.roomName || item.roomType %></td>
               <td><%= new Date(item.checkIn || item.checkin).toLocaleDateString('vi-VN') %></td>
@@ -113,29 +164,6 @@
       </tbody>
     </table>
   </div>
-<script>
-  function handleDuyetDon(bookingId, newStatus) {
-    if (confirm(`Bạn có chắc muốn chuyển đơn này sang trạng thái "${newStatus}"?`)) {
-      fetch(`/api/admin/bookings/${bookingId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          alert('Cập nhật trạng thái đơn thành công!');
-          location.reload();
-        } else {
-          alert('Có lỗi xảy ra khi cập nhật trạng thái đơn.');
-        }
-      })
-      .catch(error => {
-        console.error('Error updating booking status:', error);
-        alert('Có lỗi xảy ra khi cập nhật trạng thái đơn.');
-      });
-    }
-  }
-</script>
+<script src="/js/main-admin.js"></script>
 </body>
 </html>

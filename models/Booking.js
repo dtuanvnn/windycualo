@@ -9,7 +9,7 @@ const bookingSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: [true, 'Số điện thoại không được để trống'],
-    match: [/^(0|\+84)\d{9,10}$/, 'Số điện thoại không hợp lệ']
+    match: [/^\+?[\d\s\-()]{7,20}$/, 'Số điện thoại không hợp lệ']
   },
   email: {
     type: String,
@@ -40,7 +40,18 @@ const bookingSchema = new mongoose.Schema({
     enum: ['Pending', 'Confirmed', 'Cancelled', 'CheckedIn', 'CheckedOut'],
     default: 'Pending'
   },
-  notes: String
+  notes: String,
+  source: {
+    type: String,
+    enum: ['Website', 'Booking.com', 'Facebook'],
+    default: 'Website'
+  },
+  externalBookingId: {
+    type: String,
+    default: null,
+    sparse: true,
+    unique: true
+  }
 }, { timestamps: true });
 
 // Kiểm tra logic ngày trước khi lưu

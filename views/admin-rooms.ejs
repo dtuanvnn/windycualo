@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Phòng - Windy Hotel Cửa Lò</title>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Be Vietnam Pro', sans-serif; margin: 0; padding: 20px; background-color: #FAFAF8; color: #2C1A0A; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #C9922B; padding-bottom: 15px; }
+    h1 { margin: 0; color: #1A0A0A; font-size: 1.8rem; }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .nav-link { padding: 8px 16px; color: #C9922B; text-decoration: none; border-radius: 4px; font-size: 0.9rem; font-weight: 500; border: 1px solid #C9922B; }
+    .nav-link:hover { background-color: #C9922B; color: white; }
+    .nav-link.active { background-color: #C9922B; color: white; }
+    .btn-logout { padding: 8px 16px; background-color: #8B1A1A; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; font-weight: 500; }
+    .btn-logout:hover { background-color: #C0392B; }
+
+    .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid rgba(201,146,43,0.15); }
+    .card h3 { margin: 0 0 12px; color: #1A0A0A; font-size: 1.1rem; }
+    .card .total { font-size: 2rem; font-weight: 700; color: #C9922B; }
+    .card .stats { display: flex; gap: 12px; margin-top: 8px; font-size: 0.85rem; }
+    .card .stat { display: flex; align-items: center; gap: 4px; }
+    .stat-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot-available { background-color: #28a745; }
+    .dot-occupied { background-color: #dc3545; }
+    .dot-maintenance { background-color: #ffc107; }
+    .dot-cleaning { background-color: #17a2b8; }
+    .card .price { margin-top: 8px; font-size: 0.9rem; color: #666; }
+
+    .add-form { background: white; border-radius: 8px; padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid rgba(201,146,43,0.15); }
+    .add-form h2 { margin: 0 0 16px; font-size: 1.2rem; color: #1A0A0A; }
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 0.85rem; font-weight: 600; color: #555; }
+    .form-group input, .form-group select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; font-family: inherit; }
+    .btn-add { padding: 8px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-add:hover { background-color: #218838; }
+
+    .table-container { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow-x: auto; border: 1px solid rgba(201,146,43,0.15); }
+    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 800px; }
+    th { background-color: #F8F0E8; color: #1A0A0A; padding: 14px; font-weight: 600; border-bottom: 2px solid rgba(201,146,43,0.2); }
+    td { padding: 14px; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+    tr:hover { background-color: #FAF6F0; }
+
+    .badge { padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; display: inline-block; }
+    .badge-available { background-color: #d4edda; color: #155724; }
+    .badge-occupied { background-color: #f8d7da; color: #721c24; }
+    .badge-maintenance { background-color: #fff3cd; color: #856404; }
+    .badge-cleaning { background-color: #d1ecf1; color: #0c5460; }
+
+    .action-group { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn-sm { padding: 4px 10px; border: none; border-radius: 4px; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-move { background-color: #C9922B; color: white; }
+    .btn-move:hover { background-color: #a87820; }
+    .btn-delete { background-color: #dc3545; color: white; }
+    .btn-delete:hover { background-color: #c82333; }
+
+    .move-form { display: none; margin-top: 8px; padding: 10px; background: #f8f8f5; border-radius: 4px; border: 1px solid #eee; }
+    .move-form.show { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .move-form select, .move-form input { padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85rem; font-family: inherit; }
+    .move-form input[type="number"] { width: 60px; }
+    .btn-confirm-move { padding: 4px 12px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-size: 0.8rem; cursor: pointer; font-family: inherit; }
+
+    .no-data { text-align: center; padding: 40px; color: #888; font-style: italic; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Quản Lý Phòng Khách Sạn</h1>
+    <div class="header-actions">
+      <a href="/admin/bookings" class="nav-link">Đặt phòng</a>
+      <a href="/admin/rooms" class="nav-link active">Quản lý phòng</a>
+      <a href="/admin/logout" class="btn-logout">Đăng xuất</a>
+    </div>
+  </div>
+
+  <div class="summary-cards">
+    <% rooms.forEach(room => { %>
+      <div class="card">
+        <h3><%= room.roomName %></h3>
+        <div class="total"><%= room.totalRooms %> phòng</div>
+        <div class="stats">
+          <span class="stat"><span class="stat-dot dot-available"></span> <%= room.available %> trống</span>
+          <span class="stat"><span class="stat-dot dot-occupied"></span> <%= room.occupied %> đang ở</span>
+        </div>
+        <div class="stats">
+          <span class="stat"><span class="stat-dot dot-maintenance"></span> <%= room.maintenance %> bảo trì</span>
+          <span class="stat"><span class="stat-dot dot-cleaning"></span> <%= room.cleaning %> dọn dẹp</span>
+        </div>
+        <div class="price"><%= room.pricePerNight.toLocaleString('vi-VN') %> VNĐ / đêm</div>
+      </div>
+    <% }) %>
+  </div>
+
+  <div class="add-form">
+    <h2>Thêm / Cập nhật loại phòng</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Loại phòng</label>
+        <select id="formRoomName">
+          <option value="Standard">Standard</option>
+          <option value="Deluxe">Deluxe</option>
+          <option value="Family">Family</option>
+          <option value="Suite">Suite</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tổng số phòng</label>
+        <input type="number" id="formTotalRooms" min="0" placeholder="10">
+      </div>
+      <div class="form-group">
+        <label>Giá / đêm (VNĐ)</label>
+        <input type="number" id="formPrice" min="0" step="10000" placeholder="500000">
+      </div>
+      <div class="form-group">
+        <label>Mô tả</label>
+        <input type="text" id="formDescription" placeholder="Mô tả ngắn...">
+      </div>
+      <button class="btn-add" onclick="handleAddRoom()">Lưu</button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Loại phòng</th>
+          <th>Tổng</th>
+          <th>Trống</th>
+          <th>Đang ở</th>
+          <th>Bảo trì</th>
+          <th>Dọn dẹp</th>
+          <th>Giá / đêm</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (rooms.length === 0) { %>
+          <tr>
+            <td colspan="8" class="no-data">Chưa có dữ liệu phòng nào.</td>
+          </tr>
+        <% } else { %>
+          <% rooms.forEach(room => { %>
+            <tr>
+              <td><strong><%= room.roomName %></strong><br><small style="color:#888;"><%= room.description || '' %></small></td>
+              <td><strong><%= room.totalRooms %></strong></td>
+              <td><span class="badge badge-available"><%= room.available %></span></td>
+              <td><span class="badge badge-occupied"><%= room.occupied %></span></td>
+              <td><span class="badge badge-maintenance"><%= room.maintenance %></span></td>
+              <td><span class="badge badge-cleaning"><%= room.cleaning %></span></td>
+              <td><%= room.pricePerNight.toLocaleString('vi-VN') %> VNĐ</td>
+              <td>
+                <div class="action-group">
+                  <button class="btn-sm btn-move" onclick="toggleMoveForm('<%= room._id %>')">Chuyển trạng thái</button>
+                  <button class="btn-sm btn-delete" onclick="handleDeleteRoom('<%= room._id %>', '<%= room.roomName %>')">Xóa</button>
+                </div>
+                <div class="move-form" id="move-<%= room._id %>">
+                  <select id="from-<%= room._id %>">
+                    <option value="available">Trống (<%= room.available %>)</option>
+                    <option value="occupied">Đang ở (<%= room.occupied %>)</option>
+                    <option value="maintenance">Bảo trì (<%= room.maintenance %>)</option>
+                    <option value="cleaning">Dọn dẹp (<%= room.cleaning %>)</option>
+                  </select>
+                  <span>→</span>
+                  <select id="to-<%= room._id %>">
+                    <option value="occupied">Đang ở</option>
+                    <option value="available">Trống</option>
+                    <option value="maintenance">Bảo trì</option>
+                    <option value="cleaning">Dọn dẹp</option>
+                  </select>
+                  <input type="number" id="count-<%= room._id %>" min="1" value="1">
+                  <span>phòng</span>
+                  <button class="btn-confirm-move" onclick="handleMoveRoom('<%= room._id %>')">Xác nhận</button>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+<script src="/js/main-admin-rooms.js"></script>
+</body>
+</html>

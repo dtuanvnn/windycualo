@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const crypto = require('crypto');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const app = express();
@@ -7,7 +8,8 @@ const PORT = process.env.PORT || 3000;
 
 const mongoose = require('mongoose');
 const session = require('express-session'); // <--- Thêm thư viện session
-const Booking = require('./models/Booking'); // <--- Đảm bảo đã import Model Booking từ database của bạn
+const Booking = require('./models/Booking');
+const Room = require('./models/Room');
 
 console.log('🔌 Kiểm tra kết nối URL:', process.env.MONGO_URI); // <-- Thêm dòng này để test
 // Thay thế bằng chuỗi kết nối của bạn (Local hoặc Cloud Atlas)
@@ -25,7 +27,9 @@ mongoose.connection.on('error', err => {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => { req.rawBody = buf; }
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // --- CẤU HÌNH GỬI MAIL (GMAIL) ---
@@ -42,16 +46,14 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// 1. Cấu hình Middleware Session (Đặt phía trên các router)
 app.use(session({
-  secret: 'windy-hotel-secret-key-2026', // Chuỗi ký tự bất kỳ để mã hóa session
+  secret: process.env.SESSION_SECRET || 'windy-hotel-secret-key-2026',
   resave: false,
   saveUninitialized: true,
   cookie: { maxAge: 3600000 } // Phiên đăng nhập có hiệu lực trong 1 tiếng (3.600.000 ms)
 }));
 
-// 2. Cài đặt mật khẩu truy cập (Bạn có thể đổi mật khẩu này theo ý muốn)
-const ADMIN_PASSWORD = 'WindyCuaLo2026'; 
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'WindyCuaLo2026';
 
 // 3. Middleware kiểm tra quyền truy cập (Guard)
 const requireAdmin = (req, res, next) => {
@@ -92,6 +94,81 @@ const newsData = [
 
 app.get('/', (req, res) => {
   res.render('index', { news: newsData });
+});
+
+app.get('/api/rooms/availability', async (req, res) => {
+  const { check_in, check_out, available_only } = req.query;
+
+  if (!check_in || !check_out) {
+    return res.status(400).json({ success: false, error: 'Thiếu tham số check_in và check_out' });
+  }
+
+  function parseDateDMY(str) {
+    const parts = str.split('/');
+    if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+    return new Date(str);
+  }
+
+  const checkIn = parseDateDMY(check_in);
+  const checkOut = parseDateDMY(check_out);
+
+  if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
+    return res.status(400).json({ success: false, error: 'Định dạng ngày không hợp lệ (dd/mm/yyyy)' });
+  }
+  if (checkIn >= checkOut) {
+    return res.status(400).json({ success: false, error: 'Ngày check-out phải sau ngày check-in' });
+  }
+
+  try {
+    const rooms = await Room.find();
+
+    const overlapping = await Booking.aggregate([
+      {
+        $match: {
+          status: { $in: ['Confirmed', 'CheckedIn'] },
+          checkIn: { $lt: checkOut },
+          checkOut: { $gt: checkIn }
+        }
+      },
+      {
+        $group: {
+          _id: '$roomName',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const bookedMap = {};
+    overlapping.forEach(item => { bookedMap[item._id] = item.count; });
+
+    const availability = rooms.map(room => {
+      const booked = bookedMap[room.roomName] || 0;
+      const unavailable = room.maintenance + room.cleaning;
+      const availableRooms = Math.max(0, room.totalRooms - unavailable - booked);
+      return {
+        roomName: room.roomName,
+        totalRooms: room.totalRooms,
+        available: availableRooms,
+        booked,
+        unavailable,
+        pricePerNight: room.pricePerNight,
+        description: room.description
+      };
+    });
+
+    const filtered = available_only === 'true'
+      ? availability.filter(r => r.available > 0)
+      : availability;
+
+    return res.json({
+      success: true,
+      checkIn: check_in,
+      checkOut: check_out,
+      data: filtered
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 app.post('/api/booking', async (req, res) => {
@@ -171,6 +248,250 @@ app.post('/api/booking', async (req, res) => {
   }
 });
 
+// ─── WEBHOOK BOOKING.COM ───
+
+const ROOM_TYPE_MAP = {
+  'standard': 'Standard',
+  'standard room': 'Standard',
+  'standard cozy': 'Standard',
+  'deluxe': 'Deluxe',
+  'deluxe room': 'Deluxe',
+  'deluxe ocean view': 'Deluxe',
+  'double deluxe sea view': 'Deluxe',
+  'family': 'Family',
+  'family room': 'Family',
+  'family suite': 'Family',
+  'suite': 'Suite',
+  'premium suite': 'Suite',
+  'executive suite': 'Suite'
+};
+
+function mapRoomType(externalRoomType) {
+  if (!externalRoomType) return null;
+  return ROOM_TYPE_MAP[externalRoomType.trim().toLowerCase()] || null;
+}
+
+app.post('/api/webhook/booking-com', async (req, res) => {
+  const apiKey = req.headers['x-api-key'];
+  if (!apiKey || apiKey !== process.env.BOOKINGCOM_API_KEY) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+
+  const { booking_id, guest_name, guest_phone, guest_email, room_type, checkin_date, checkout_date, num_guests, notes } = req.body;
+
+  if (!booking_id || !guest_name || !room_type || !checkin_date || !checkout_date) {
+    return res.status(400).json({
+      success: false,
+      error: 'Thiếu trường bắt buộc: booking_id, guest_name, room_type, checkin_date, checkout_date'
+    });
+  }
+
+  const mappedRoomType = mapRoomType(room_type);
+  if (!mappedRoomType) {
+    return res.status(400).json({
+      success: false,
+      error: `Loại phòng không nhận diện được: "${room_type}". Các tên hợp lệ: ${Object.keys(ROOM_TYPE_MAP).join(', ')}`
+    });
+  }
+
+  try {
+    const existingBooking = await Booking.findOne({ externalBookingId: booking_id });
+    if (existingBooking) {
+      return res.status(409).json({
+        success: false,
+        error: 'Đơn đặt phòng đã tồn tại',
+        existingBookingId: existingBooking._id
+      });
+    }
+
+    const newBooking = new Booking({
+      fullName: guest_name.trim(),
+      phone: guest_phone ? guest_phone.trim() : 'N/A',
+      email: guest_email || undefined,
+      roomName: mappedRoomType,
+      checkIn: new Date(checkin_date),
+      checkOut: new Date(checkout_date),
+      guests: num_guests || 1,
+      status: 'Confirmed',
+      source: 'Booking.com',
+      externalBookingId: booking_id,
+      notes: notes || undefined
+    });
+
+    const savedBooking = await newBooking.save();
+    console.log(`✅ [BOOKING.COM] Đã lưu đơn ${booking_id} → MongoDB ID: ${savedBooking._id}`);
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      subject: `[BOOKING.COM] - Khách hàng: ${guest_name.toUpperCase()} (${booking_id})`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #003580; padding: 20px;">
+          <h2 style="color: #003580; border-bottom: 2px solid #003580; padding-bottom: 10px;">ĐẶT PHÒNG MỚI TỪ BOOKING.COM</h2>
+          <p><b>Mã đặt phòng Booking.com:</b> ${booking_id}</p>
+          <p><b>Họ và tên khách hàng:</b> ${guest_name}</p>
+          <p><b>Số điện thoại:</b> ${guest_phone || 'Không có'}</p>
+          <p><b>Email:</b> ${guest_email || 'Không có'}</p>
+          <p><b>Hạng phòng:</b> ${mappedRoomType} (gốc: ${room_type})</p>
+          <p><b>Ngày nhận phòng (Check-in):</b> ${checkin_date}</p>
+          <p><b>Ngày trả phòng (Check-out):</b> ${checkout_date}</p>
+          <p><b>Số khách:</b> ${num_guests || 1}</p>
+          ${notes ? `<p><b>Ghi chú:</b> ${notes}</p>` : ''}
+          <hr style="border: 0; border-top: 1px solid #eee;">
+          <p style="font-size: 12px; color: #666;">Hệ thống thông báo tự động - Đơn đã được XÁC NHẬN tự động từ Booking.com.</p>
+        </div>
+      `
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('❌ Lỗi gửi email thông báo Booking.com:', error);
+      } else {
+        console.log('🚀 Email thông báo Booking.com đã gửi thành công:', info.response);
+      }
+    });
+
+    return res.json({ success: true, bookingId: savedBooking._id });
+  } catch (error) {
+    console.error('❌ Lỗi xử lý webhook Booking.com:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// ─── WEBHOOK FACEBOOK LEAD ADS ───
+
+function verifyFacebookSignature(req) {
+  const signature = req.headers['x-hub-signature-256'];
+  if (!signature || !process.env.FB_APP_SECRET) return false;
+  const expected = 'sha256=' + crypto.createHmac('sha256', process.env.FB_APP_SECRET)
+    .update(req.rawBody)
+    .digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}
+
+function extractLeadField(fieldData, fieldName) {
+  const field = fieldData.find(f => f.name === fieldName);
+  return field && field.values && field.values[0] ? field.values[0] : null;
+}
+
+app.get('/api/webhook/facebook', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  if (mode === 'subscribe' && token === process.env.FB_VERIFY_TOKEN) {
+    console.log('✅ [FACEBOOK] Webhook verification thành công');
+    return res.status(200).send(challenge);
+  }
+  return res.status(403).send('Forbidden');
+});
+
+app.post('/api/webhook/facebook', async (req, res) => {
+  if (process.env.FB_APP_SECRET && process.env.FB_APP_SECRET !== 'your_facebook_app_secret_here') {
+    if (!verifyFacebookSignature(req)) {
+      console.log('❌ [FACEBOOK] Chữ ký không hợp lệ');
+      return res.status(401).send('Invalid signature');
+    }
+  }
+
+  res.status(200).send('EVENT_RECEIVED');
+
+  try {
+    const entries = req.body.entry || [];
+    for (const entry of entries) {
+      const changes = entry.changes || [];
+      for (const change of changes) {
+        if (change.field !== 'leadgen') continue;
+        const leadgenId = change.value && change.value.leadgen_id;
+        if (!leadgenId) continue;
+
+        const existing = await Booking.findOne({ externalBookingId: `fb-${leadgenId}` });
+        if (existing) {
+          console.log(`⏭️ [FACEBOOK] Lead ${leadgenId} đã tồn tại, bỏ qua`);
+          continue;
+        }
+
+        console.log(`📥 [FACEBOOK] Nhận lead mới: ${leadgenId}`);
+
+        const graphUrl = `https://graph.facebook.com/v21.0/${leadgenId}?access_token=${process.env.FB_PAGE_ACCESS_TOKEN}`;
+        const graphRes = await fetch(graphUrl);
+        if (!graphRes.ok) {
+          console.error(`❌ [FACEBOOK] Lỗi Graph API: ${graphRes.status} ${graphRes.statusText}`);
+          continue;
+        }
+
+        const leadData = await graphRes.json();
+        const fieldData = leadData.field_data || [];
+
+        const fullName = extractLeadField(fieldData, 'full_name') || 'Khách Facebook';
+        const phone = extractLeadField(fieldData, 'phone_number') || 'N/A';
+        const email = extractLeadField(fieldData, 'email') || undefined;
+        const roomTypeRaw = extractLeadField(fieldData, 'room_type');
+        const checkinRaw = extractLeadField(fieldData, 'check_in_date');
+        const checkoutRaw = extractLeadField(fieldData, 'check_out_date');
+
+        const mappedRoom = mapRoomType(roomTypeRaw) || 'Standard';
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const checkIn = checkinRaw ? new Date(checkinRaw) : today;
+        const checkOut = checkoutRaw ? new Date(checkoutRaw) : tomorrow;
+
+        const noteParts = [];
+        if (!roomTypeRaw) noteParts.push('Loại phòng mặc định (chưa chọn)');
+        if (!checkinRaw) noteParts.push('Ngày nhận phòng mặc định (chưa chọn)');
+
+        const newBooking = new Booking({
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+          email,
+          roomName: mappedRoom,
+          checkIn,
+          checkOut,
+          guests: 1,
+          status: 'Pending',
+          source: 'Facebook',
+          externalBookingId: `fb-${leadgenId}`,
+          notes: noteParts.length > 0 ? noteParts.join('. ') : undefined
+        });
+
+        const saved = await newBooking.save();
+        console.log(`✅ [FACEBOOK] Đã lưu lead ${leadgenId} → MongoDB ID: ${saved._id}`);
+
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: process.env.EMAIL_USER,
+          subject: `[FACEBOOK] - Khách hàng: ${fullName.toUpperCase()} (Lead ${leadgenId})`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #1877F2; padding: 20px;">
+              <h2 style="color: #1877F2; border-bottom: 2px solid #1877F2; padding-bottom: 10px;">KHÁCH HÀNG MỚI TỪ FACEBOOK</h2>
+              <p><b>Mã Lead Facebook:</b> ${leadgenId}</p>
+              <p><b>Họ và tên:</b> ${fullName}</p>
+              <p><b>Số điện thoại:</b> ${phone !== 'N/A' ? phone : 'Không có'}</p>
+              <p><b>Email:</b> ${email || 'Không có'}</p>
+              <p><b>Hạng phòng:</b> ${mappedRoom}${roomTypeRaw ? ` (gốc: ${roomTypeRaw})` : ' (mặc định)'}</p>
+              <p><b>Ngày nhận phòng:</b> ${checkinRaw || 'Chưa chọn - cần liên hệ khách'}</p>
+              <p><b>Ngày trả phòng:</b> ${checkoutRaw || 'Chưa chọn - cần liên hệ khách'}</p>
+              <hr style="border: 0; border-top: 1px solid #eee;">
+              <p style="font-size: 12px; color: #666;">Hệ thống thông báo tự động - Vui lòng GỌI ĐIỆN xác nhận với khách hàng.</p>
+            </div>
+          `
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.error('❌ Lỗi gửi email thông báo Facebook:', error);
+          } else {
+            console.log('🚀 Email thông báo Facebook đã gửi thành công:', info.response);
+          }
+        });
+      }
+    }
+  } catch (error) {
+    console.error('❌ Lỗi xử lý webhook Facebook:', error);
+  }
+});
+
 // ─── CÁC ROUTE QUẢN TRỊ ĐẶT PHÒNG ───
 
 // GET: Trang hiển thị form điền mật khẩu
@@ -213,7 +534,7 @@ app.get('/admin/logout', (req, res) => {
 // ─────────────────────────────────────────────────────────────────
 
 // 1. API: Lấy danh sách TOÀN BỘ đơn đặt phòng để hiển thị ra bảng Admin
-app.get('/api/admin/bookings', async (req, res) => {
+app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
   try {
     // Sắp xếp đơn mới nhất (createdAt: -1) lên đầu bảng
     const bookings = await Booking.find().sort({ createdAt: -1 });
@@ -224,7 +545,7 @@ app.get('/api/admin/bookings', async (req, res) => {
 });
 
 // 2. API: Cập nhật trạng thái đơn (Duyệt / Hủy / Nhận phòng...)
-app.patch('/api/admin/bookings/:id/status', async (req, res) => {
+app.patch('/api/admin/bookings/:id/status', requireAdmin, async (req, res) => {
   const { id } = req.params;      // Lấy ID đơn từ đường dẫn URL
   const { status } = req.body;    // Lấy trạng thái mới truyền lên (ví dụ: 'Confirmed' hoặc 'Cancelled')
 
@@ -262,6 +583,126 @@ app.patch('/api/admin/bookings/:id/status', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Lỗi duyệt đơn:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
+// QUẢN LÝ PHÒNG
+// ─────────────────────────────────────────────────────────────────
+
+const DEFAULT_ROOMS = [
+  { roomName: 'Standard', totalRooms: 10, available: 10, pricePerNight: 500000, description: 'Phòng tiêu chuẩn' },
+  { roomName: 'Deluxe', totalRooms: 8, available: 8, pricePerNight: 800000, description: 'Phòng cao cấp view biển' },
+  { roomName: 'Family', totalRooms: 5, available: 5, pricePerNight: 1200000, description: 'Phòng gia đình rộng rãi' },
+  { roomName: 'Suite', totalRooms: 3, available: 3, pricePerNight: 2000000, description: 'Phòng hạng sang VIP' }
+];
+
+app.get('/admin/rooms', requireAdmin, async (req, res) => {
+  try {
+    let rooms = await Room.find().sort({ roomName: 1 });
+    if (rooms.length === 0) {
+      rooms = await Room.insertMany(DEFAULT_ROOMS);
+      console.log('✅ Đã tạo dữ liệu phòng mặc định');
+    }
+    res.render('admin-rooms', { rooms });
+  } catch (error) {
+    console.error('Lỗi tải dữ liệu phòng:', error);
+    res.status(500).send('Đã có lỗi xảy ra khi tải dữ liệu phòng.');
+  }
+});
+
+app.get('/api/admin/rooms', requireAdmin, async (req, res) => {
+  try {
+    const rooms = await Room.find().sort({ roomName: 1 });
+    return res.json({ success: true, data: rooms });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/admin/rooms', requireAdmin, async (req, res) => {
+  const { roomName, totalRooms, pricePerNight, description } = req.body;
+
+  if (!roomName || totalRooms == null || pricePerNight == null) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin bắt buộc' });
+  }
+
+  try {
+    const existing = await Room.findOne({ roomName });
+    if (existing) {
+      const diff = totalRooms - existing.totalRooms;
+      existing.totalRooms = totalRooms;
+      existing.available = Math.max(0, existing.available + diff);
+      existing.pricePerNight = pricePerNight;
+      if (description !== undefined) existing.description = description;
+      const saved = await existing.save();
+      return res.json({ success: true, message: 'Đã cập nhật loại phòng', data: saved });
+    }
+
+    const newRoom = new Room({
+      roomName,
+      totalRooms,
+      available: totalRooms,
+      occupied: 0,
+      maintenance: 0,
+      cleaning: 0,
+      pricePerNight,
+      description
+    });
+    const saved = await newRoom.save();
+    return res.json({ success: true, message: 'Đã thêm loại phòng mới', data: saved });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.patch('/api/admin/rooms/:id/status', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { from, to, count } = req.body;
+
+  const validStatuses = ['available', 'occupied', 'maintenance', 'cleaning'];
+  if (!validStatuses.includes(from) || !validStatuses.includes(to)) {
+    return res.status(400).json({ success: false, error: 'Trạng thái không hợp lệ' });
+  }
+  if (from === to) {
+    return res.status(400).json({ success: false, error: 'Trạng thái nguồn và đích phải khác nhau' });
+  }
+  if (!count || count < 1) {
+    return res.status(400).json({ success: false, error: 'Số lượng phải lớn hơn 0' });
+  }
+
+  try {
+    const room = await Room.findById(id);
+    if (!room) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy loại phòng' });
+    }
+    if (room[from] < count) {
+      return res.status(400).json({
+        success: false,
+        error: `Không đủ phòng để chuyển: ${from} hiện có ${room[from]}, yêu cầu ${count}`
+      });
+    }
+
+    room[from] -= count;
+    room[to] += count;
+    const saved = await room.save();
+    console.log(`🔄 [PHÒNG] Chuyển ${count} phòng ${room.roomName}: ${from} → ${to}`);
+    return res.json({ success: true, message: `Đã chuyển ${count} phòng từ ${from} sang ${to}`, data: saved });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.delete('/api/admin/rooms/:id', requireAdmin, async (req, res) => {
+  try {
+    const deleted = await Room.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy loại phòng' });
+    }
+    console.log(`🗑️ [PHÒNG] Đã xóa loại phòng: ${deleted.roomName}`);
+    return res.json({ success: true, message: `Đã xóa loại phòng ${deleted.roomName}` });
+  } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }
 });
