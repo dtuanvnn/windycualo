@@ -97,7 +97,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/rooms/availability', async (req, res) => {
-  const { check_in, check_out, available_only } = req.query;
+  const { check_in, check_out, available_only, format } = req.query;
 
   if (!check_in || !check_out) {
     return res.status(400).json({ success: false, error: 'Thiếu tham số check_in và check_out' });
@@ -159,6 +159,50 @@ app.get('/api/rooms/availability', async (req, res) => {
     const filtered = available_only === 'true'
       ? availability.filter(r => r.available > 0)
       : availability;
+
+    if (format === 'chatbot') {
+      const ROOM_IMAGES = {
+        'Standard': 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500&q=80',
+        'Deluxe': 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=500&q=80',
+        'Family': 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&q=80',
+        'Suite': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=500&q=80'
+      };
+
+      const availableRooms = filtered.filter(r => r.available > 0);
+
+      if (availableRooms.length === 0) {
+        return res.json({
+          messages: [{ text: `Rất tiếc, không còn phòng trống từ ${check_in} đến ${check_out}. Quý khách vui lòng chọn ngày khác hoặc liên hệ Hotline.` }]
+        });
+      }
+
+      const elements = availableRooms.map(room => ({
+        title: `Phòng ${room.roomName}`,
+        image_url: ROOM_IMAGES[room.roomName] || ROOM_IMAGES['Standard'],
+        subtitle: `Giá: ${room.pricePerNight.toLocaleString('vi-VN')}đ/đêm. Còn ${room.available} phòng trống.`,
+        buttons: [
+          {
+            type: 'block',
+            block_name: 'Xác nhận đặt phòng',
+            title: 'Đặt phòng này'
+          }
+        ]
+      }));
+
+      return res.json({
+        messages: [
+          {
+            attachment: {
+              type: 'template',
+              payload: {
+                template_type: 'generic',
+                elements
+              }
+            }
+          }
+        ]
+      });
+    }
 
     return res.json({
       success: true,
