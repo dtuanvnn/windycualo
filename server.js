@@ -206,14 +206,13 @@ app.get('/api/rooms/availability', async (req, res) => {
         buttons: [
           {
             type: 'block',
-            block_name: 'bookingaction',
+            block_name: 'Đặt phòng',
             title: 'Đặt phòng này'
           }
         ]
       }));
 
       return res.json({
-        ...(messenger_user_id && { messenger_user_id }),
         messages: [
           {
             attachment: {
@@ -224,7 +223,8 @@ app.get('/api/rooms/availability', async (req, res) => {
               }
             }
           }
-        ]
+        ],
+        ...(messenger_user_id && { messenger_user_id })
       });
     }
 
