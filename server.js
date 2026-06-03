@@ -97,10 +97,13 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/rooms/availability', async (req, res) => {
-  const { check_in, check_out, available_only, format } = req.query;
+  const { check_in, check_out, night, available_only, format, messenger_user_id } = req.query;
 
-  if (!check_in || !check_out) {
-    return res.status(400).json({ success: false, error: 'Thiếu tham số check_in và check_out' });
+  if (!check_in) {
+    return res.status(400).json({ success: false, error: 'Thiếu tham số check_in' });
+  }
+  if (!check_out && !night) {
+    return res.status(400).json({ success: false, error: 'Cần truyền check_out hoặc night' });
   }
 
   function parseDateDMY(str) {
@@ -110,11 +113,25 @@ app.get('/api/rooms/availability', async (req, res) => {
   }
 
   const checkIn = parseDateDMY(check_in);
-  const checkOut = parseDateDMY(check_out);
-
-  if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
-    return res.status(400).json({ success: false, error: 'Định dạng ngày không hợp lệ (dd/mm/yyyy)' });
+  if (isNaN(checkIn.getTime())) {
+    return res.status(400).json({ success: false, error: 'Định dạng ngày check_in không hợp lệ (dd/mm/yyyy)' });
   }
+
+  let checkOut;
+  if (night) {
+    const nights = parseInt(night);
+    if (isNaN(nights) || nights < 1) {
+      return res.status(400).json({ success: false, error: 'Số đêm (night) phải là số nguyên >= 1' });
+    }
+    checkOut = new Date(checkIn);
+    checkOut.setDate(checkOut.getDate() + nights);
+  } else {
+    checkOut = parseDateDMY(check_out);
+    if (isNaN(checkOut.getTime())) {
+      return res.status(400).json({ success: false, error: 'Định dạng ngày check_out không hợp lệ (dd/mm/yyyy)' });
+    }
+  }
+
   if (checkIn >= checkOut) {
     return res.status(400).json({ success: false, error: 'Ngày check-out phải sau ngày check-in' });
   }
@@ -140,6 +157,11 @@ app.get('/api/rooms/availability', async (req, res) => {
 
     const bookedMap = {};
     overlapping.forEach(item => { bookedMap[item._id] = item.count; });
+
+    const fmtDMY = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+    const checkInStr = check_in;
+    const checkOutStr = check_out || fmtDMY(checkOut);
+    const numNights = Math.round((checkOut - checkIn) / (1000 * 60 * 60 * 24));
 
     const availability = rooms.map(room => {
       const booked = bookedMap[room.roomName] || 0;
@@ -172,7 +194,8 @@ app.get('/api/rooms/availability', async (req, res) => {
 
       if (availableRooms.length === 0) {
         return res.json({
-          messages: [{ text: `Rất tiếc, không còn phòng trống từ ${check_in} đến ${check_out}. Quý khách vui lòng chọn ngày khác hoặc liên hệ Hotline.` }]
+          ...(messenger_user_id && { messenger_user_id }),
+          messages: [{ text: `Rất tiếc, không còn phòng trống từ ${checkInStr} đến ${checkOutStr} (${numNights} đêm). Quý khách vui lòng chọn ngày khác hoặc liên hệ Hotline.` }]
         });
       }
 
@@ -190,6 +213,7 @@ app.get('/api/rooms/availability', async (req, res) => {
       }));
 
       return res.json({
+        ...(messenger_user_id && { messenger_user_id }),
         messages: [
           {
             attachment: {
@@ -206,8 +230,9 @@ app.get('/api/rooms/availability', async (req, res) => {
 
     return res.json({
       success: true,
-      checkIn: check_in,
-      checkOut: check_out,
+      checkIn: checkInStr,
+      checkOut: checkOutStr,
+      nights: numNights,
       data: filtered
     });
   } catch (error) {
