@@ -218,7 +218,7 @@ app.get('/api/rooms/availability', async (req, res) => {
             attachment: {
               type: 'template',
               payload: {
-                template_type: 'button',
+                template_type: 'generic',
                 elements
               }
             }
