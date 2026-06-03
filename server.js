@@ -183,7 +183,7 @@ app.get('/api/rooms/availability', async (req, res) => {
         buttons: [
           {
             type: 'block',
-            block_name: 'Xác nhận đặt phòng',
+            block_name: 'bookingaction',
             title: 'Đặt phòng này'
           }
         ]
