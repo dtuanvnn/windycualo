@@ -182,8 +182,8 @@ app.get('/api/rooms/availability', async (req, res) => {
         subtitle: `Giá: ${room.pricePerNight.toLocaleString('vi-VN')}đ/đêm. Còn ${room.available} phòng trống.`,
         buttons: [
           {
-            type: 'block',
-            block_name: 'bookingaction',
+            type: 'web_url',
+            url: 'https://google.com',
             title: 'Đặt phòng này'
           }
         ]
