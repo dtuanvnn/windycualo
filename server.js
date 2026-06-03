@@ -203,13 +203,26 @@ app.get('/api/rooms/availability', async (req, res) => {
         title: `Phòng ${room.roomName}`,
         image_url: ROOM_IMAGES[room.roomName] || ROOM_IMAGES['Standard'],
         subtitle: `Giá: ${room.pricePerNight.toLocaleString('vi-VN')}đ/đêm. Còn ${room.available} phòng trống.`,
-        buttons: [
-          {
-            type: 'show_block',
-            block_name: 'Đặt phòng',
-            title: 'Đặt phòng này'
+        // buttons: [
+        //   {
+        //     type: 'show_block',
+        //     block_name: 'Đặt phòng',
+        //     title: 'Đặt phòng',
+        //     set_attributes: [
+        //       {
+        //         room_type: JSON.stringify(room.roomName)
+        //       }
+        //     ]
+        //   }
+        // ]
+        quick_replies: [
+        {
+          title: "Đặt phòng",
+          block_name: "Place Booking",
+          set_attributes: {
+            room_type: JSON.stringify(room.roomName)
           }
-        ]
+        }]
       }));
 
       return res.json({
