@@ -205,7 +205,7 @@ app.get('/api/rooms/availability', async (req, res) => {
         subtitle: `Giá: ${room.pricePerNight.toLocaleString('vi-VN')}đ/đêm. Còn ${room.available} phòng trống.`,
         buttons: [
           {
-            type: 'block',
+            type: 'show_block',
             block_name: 'Đặt phòng',
             title: 'Đặt phòng này'
           }
@@ -218,7 +218,7 @@ app.get('/api/rooms/availability', async (req, res) => {
             attachment: {
               type: 'template',
               payload: {
-                template_type: 'generic',
+                template_type: 'button',
                 elements
               }
             }
