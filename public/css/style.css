@@ -20,7 +20,7 @@ body { font-family: 'Be Vietnam Pro', sans-serif; background: var(--white); colo
 .text-center { text-align: center; }
 .section-padding { padding: 80px 0; }
 .bg-light { background-color: var(--cream); }
-
+.topbar-left span a { color: var(--gold-light); }
 .section-subtitle { color: var(--gold); font-size: 13px; letter-spacing: 2px; font-weight: 600; margin-bottom: 10px; text-transform: uppercase; }
 .section-title { font-family: 'Playfair Display', serif; font-size: 36px; color: var(--navy); }
 .divider { width: 60px; height: 3px; background: var(--gold); margin: 20px auto 40px; }
@@ -91,7 +91,7 @@ nav { position: sticky; top: 0; background: rgba(26, 10, 10, 0.96); backdrop-fil
 .readmore { color: var(--gold-dark); text-decoration: none; font-weight: 600; }
 
 /* Contact Section */
-.contact-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+.contact-wrapper { display: flex; grid-template-columns: 1fr 1fr; gap: 40px; }
 .contact-info { background: var(--navy-light); color: #fff; padding: 40px; border-left: 4px solid var(--gold); }
 .contact-info h4 { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--gold-light); margin-bottom: 15px; }
 .contact-info p { margin-bottom: 12px; font-size: 14.5px; color: var(--cream); }
