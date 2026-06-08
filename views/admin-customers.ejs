@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Khách Hàng - Windy Hotel Cửa Lò</title>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Be Vietnam Pro', sans-serif; margin: 0; padding: 20px; background-color: #FAFAF8; color: #2C1A0A; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #C9922B; padding-bottom: 15px; }
+    h1 { margin: 0; color: #1A0A0A; font-size: 1.8rem; }
+    .header-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .nav-link { padding: 8px 16px; color: #C9922B; text-decoration: none; border-radius: 4px; font-size: 0.9rem; font-weight: 500; border: 1px solid #C9922B; }
+    .nav-link:hover { background-color: #C9922B; color: white; }
+    .nav-link.active { background-color: #C9922B; color: white; }
+    .btn-logout { padding: 8px 16px; background-color: #8B1A1A; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; font-weight: 500; }
+    .btn-logout:hover { background-color: #C0392B; }
+
+    .controls-bar { background: white; border-radius: 8px; padding: 14px 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid rgba(201,146,43,0.15); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .controls-bar label { font-size: 0.85rem; font-weight: 600; color: #555; }
+    .controls-bar input[type="text"] { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; font-family: inherit; flex: 1; max-width: 400px; }
+    .btn-view { padding: 8px 16px; background-color: #C9922B; color: white; border: none; border-radius: 4px; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-view:hover { background-color: #a87820; }
+    .btn-secondary { padding: 8px 16px; background-color: #6c757d; color: white; border: none; border-radius: 4px; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-secondary:hover { background-color: #5a6268; }
+
+    .add-form { background: white; border-radius: 8px; padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid rgba(201,146,43,0.15); }
+    .add-form h2 { margin: 0 0 16px; font-size: 1.2rem; color: #1A0A0A; }
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 0.85rem; font-weight: 600; color: #555; }
+    .form-group input, .form-group select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; font-family: inherit; }
+    .btn-add { padding: 8px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-add:hover { background-color: #218838; }
+    .btn-cancel { padding: 8px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; display: none; }
+    .btn-cancel:hover { background-color: #5a6268; }
+
+    .table-container { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow-x: auto; border: 1px solid rgba(201,146,43,0.15); }
+    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 1000px; }
+    th { background-color: #F8F0E8; color: #1A0A0A; padding: 14px; font-weight: 600; border-bottom: 2px solid rgba(201,146,43,0.2); font-size: 0.85rem; }
+    td { padding: 14px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+    tr:hover { background-color: #FAF6F0; }
+
+    .badge { padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; display: inline-block; }
+    .badge-walkin { background-color: #d4edda; color: #155724; }
+    .badge-website { background-color: #e2e3f1; color: #3b3f8c; }
+    .badge-phone { background-color: #fff3cd; color: #856404; }
+    .badge-fbmessenger { background-color: #e7f0ff; color: #1877F2; }
+    .badge-bookingcom { background-color: #dff0fe; color: #003580; }
+    .badge-agoda { background-color: #fce4ec; color: #c62828; }
+    .badge-traveloka { background-color: #e0f7fa; color: #00695c; }
+    .badge-other { background-color: #f5f5f5; color: #666; }
+
+    .phone-link { color: #C9922B; text-decoration: none; font-weight: 600; }
+    .phone-link:hover { text-decoration: underline; }
+
+    .action-group { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn-sm { padding: 4px 10px; border: none; border-radius: 4px; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-detail { background-color: #17a2b8; color: white; }
+    .btn-detail:hover { background-color: #138496; }
+    .btn-edit { background-color: #C9922B; color: white; }
+    .btn-edit:hover { background-color: #a87820; }
+    .btn-delete { background-color: #dc3545; color: white; }
+    .btn-delete:hover { background-color: #c82333; }
+
+    .no-data { text-align: center; padding: 40px; color: #888; font-style: italic; }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: white; border-radius: 8px; max-width: 900px; width: 90%; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,0.15); border: 1px solid rgba(201,146,43,0.15); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 2px solid #C9922B; }
+    .modal-header h3 { margin: 0; font-size: 1.2rem; color: #1A0A0A; }
+    .modal-body { padding: 20px; }
+    .btn-close-modal { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #888; padding: 0 4px; }
+    .btn-close-modal:hover { color: #333; }
+
+    .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .detail-item label { font-size: 0.8rem; font-weight: 600; color: #888; display: block; margin-bottom: 2px; }
+    .detail-item .value { font-size: 0.95rem; color: #1A0A0A; font-weight: 500; }
+
+    .summary-cards { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .summary-card { background: #F8F0E8; border-radius: 8px; padding: 14px 18px; flex: 1; min-width: 150px; text-align: center; }
+    .summary-card .num { font-size: 1.4rem; font-weight: 700; color: #C9922B; }
+    .summary-card .label { font-size: 0.8rem; color: #555; }
+
+    .detail-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .detail-table th { background-color: #F8F0E8; padding: 10px; font-size: 0.8rem; }
+    .detail-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+
+    .section-title { font-size: 1rem; font-weight: 700; color: #1A0A0A; margin: 16px 0 8px; border-bottom: 1px solid rgba(201,146,43,0.15); padding-bottom: 6px; }
+
+    .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .st-pending { background-color: #fff3cd; color: #856404; }
+    .st-confirmed { background-color: #d4edda; color: #155724; }
+    .st-cancelled { background-color: #f8d7da; color: #721c24; }
+    .st-checkedin { background-color: #cce5ff; color: #004085; }
+    .st-checkedout { background-color: #e2e3e5; color: #383d41; }
+
+    @media (max-width: 768px) {
+      .header { flex-direction: column; gap: 12px; }
+      .detail-grid { grid-template-columns: 1fr 1fr; }
+      .form-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Quản Lý Khách Hàng</h1>
+    <div class="header-actions">
+      <a href="/admin/bookings" class="nav-link">Đặt phòng</a>
+      <a href="/admin/rooms" class="nav-link">Quản lý phòng</a>
+      <a href="/admin/room-map" class="nav-link">Sơ đồ phòng</a>
+      <a href="/admin/room-calendar" class="nav-link">Lịch phòng</a>
+      <a href="/admin/prices" class="nav-link">Bảng giá</a>
+      <a href="/admin/customers" class="nav-link active">Khách hàng</a>
+      <a href="/admin/logout" class="btn-logout">Đăng xuất</a>
+    </div>
+  </div>
+
+  <div class="controls-bar">
+    <label>Tìm kiếm:</label>
+    <input type="text" id="searchInput" placeholder="Nhập tên, SĐT, mã KH, hoặc email..." onkeydown="if(event.key==='Enter')handleSearch()">
+    <button class="btn-view" onclick="handleSearch()">Tìm</button>
+    <button class="btn-secondary" onclick="handleClearSearch()">Xóa bộ lọc</button>
+  </div>
+
+  <div class="add-form">
+    <h2 id="formTitle">Thêm khách hàng mới</h2>
+    <input type="hidden" id="formEditId" value="">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Họ tên *</label>
+        <input type="text" id="formName" placeholder="Nguyễn Văn A">
+      </div>
+      <div class="form-group">
+        <label>Số điện thoại *</label>
+        <input type="text" id="formPhone" placeholder="0912345678">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="formEmail" placeholder="email@example.com">
+      </div>
+      <div class="form-group">
+        <label>CMND/CCCD</label>
+        <input type="text" id="formIdentityCard" placeholder="001234567890">
+      </div>
+      <div class="form-group">
+        <label>Nguồn khách</label>
+        <select id="formSource">
+          <option value="Walk-in">Khách vãng lai</option>
+          <option value="Website">Website</option>
+          <option value="Direct Phone">Gọi điện trực tiếp</option>
+          <option value="FB Messenger">Facebook Messenger</option>
+          <option value="Booking.com">Booking.com</option>
+          <option value="Agoda">Agoda</option>
+          <option value="Traveloka">Traveloka</option>
+          <option value="Other">Khác</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Ghi chú</label>
+        <input type="text" id="formNotes" placeholder="Ghi chú...">
+      </div>
+      <button class="btn-add" onclick="handleSaveCustomer()">Lưu</button>
+      <button class="btn-cancel" id="btnCancel" onclick="handleCancelEdit()">Hủy</button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Mã KH</th>
+          <th>Họ tên</th>
+          <th>Số điện thoại</th>
+          <th>Email</th>
+          <th>CMND/CCCD</th>
+          <th>Nguồn</th>
+          <th>Ngày tạo</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody id="customerTableBody">
+        <% if (customers.length === 0) { %>
+          <tr>
+            <td colspan="8" class="no-data">Chưa có khách hàng nào.</td>
+          </tr>
+        <% } else { %>
+          <% customers.forEach(c => { %>
+            <% const sourceMap = { 'Walk-in': 'walkin', 'Website': 'website', 'Direct Phone': 'phone', 'FB Messenger': 'fbmessenger', 'Booking.com': 'bookingcom', 'Agoda': 'agoda', 'Traveloka': 'traveloka', 'Other': 'other' }; %>
+            <% const sourceLabels = { 'Walk-in': 'Vãng lai', 'Website': 'Website', 'Direct Phone': 'Gọi điện', 'FB Messenger': 'Facebook', 'Booking.com': 'Booking.com', 'Agoda': 'Agoda', 'Traveloka': 'Traveloka', 'Other': 'Khác' }; %>
+            <tr>
+              <td><strong><%= c.customerId %></strong></td>
+              <td><%= c.name %></td>
+              <td><a href="tel:<%= c.phone %>" class="phone-link"><%= c.phone %></a></td>
+              <td><%= c.email || '—' %></td>
+              <td><%= c.identityCard || '—' %></td>
+              <td><span class="badge badge-<%= sourceMap[c.source] || 'other' %>"><%= sourceLabels[c.source] || c.source %></span></td>
+              <td><%= new Date(c.createdAt).toLocaleDateString('vi-VN') %></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn-sm btn-detail" onclick="showCustomerDetail('<%= c._id %>')">Chi tiết</button>
+                  <button class="btn-sm btn-edit" onclick="handleEditCustomer('<%= c._id %>', '<%= c.name %>', '<%= c.phone %>', '<%= c.email || '' %>', '<%= c.identityCard || '' %>', '<%= c.source %>', '<%= c.notes || '' %>')">Sửa</button>
+                  <button class="btn-sm btn-delete" onclick="handleDeleteCustomer('<%= c._id %>', '<%= c.name %>')">Xóa</button>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal: Chi tiết khách hàng -->
+  <div class="modal-overlay" id="detailModal" style="display:none" onclick="if(event.target===this)closeDetailModal()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="detailTitle">Chi tiết khách hàng</h3>
+        <button class="btn-close-modal" onclick="closeDetailModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-grid" id="detailGrid"></div>
+        <div class="summary-cards" id="summaryCards"></div>
+        <div class="section-title">Lịch sử lưu trú</div>
+        <div style="overflow-x:auto">
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Loại phòng</th>
+                <th>Check-in</th>
+                <th>Check-out</th>
+                <th>Số khách</th>
+                <th>Trạng thái</th>
+                <th>Nguồn đặt</th>
+                <th>Tổng tiền</th>
+                <th>Đã thanh toán</th>
+                <th>Phương thức</th>
+              </tr>
+            </thead>
+            <tbody id="stayHistoryBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="/js/main-admin-customers.js"></script>
+</body>
+</html>

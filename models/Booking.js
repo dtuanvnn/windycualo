@@ -43,7 +43,7 @@ const bookingSchema = new mongoose.Schema({
   notes: String,
   source: {
     type: String,
-    enum: ['Website', 'Booking.com', 'Facebook'],
+    enum: ['Website', 'Booking.com', 'Facebook', 'Walk-in', 'Direct Phone', 'Agoda', 'Traveloka', 'Other'],
     default: 'Website'
   },
   externalBookingId: {
@@ -51,6 +51,30 @@ const bookingSchema = new mongoose.Schema({
     default: null,
     sparse: true,
     unique: true
+  },
+  customer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Customer',
+    default: null
+  },
+  totalAmount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  amountPaid: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['Cash', 'Bank Transfer', 'Card', 'Momo', 'Other', null],
+    default: null
+  },
+  paymentDate: {
+    type: Date,
+    default: null
   }
 }, { timestamps: true });
 

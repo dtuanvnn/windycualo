@@ -127,13 +127,83 @@ function handleBooking(event) {
   });
 }
 
+// Hiển thị giá ước tính khi chọn ngày và loại phòng
+async function updatePriceEstimate() {
+  const checkin = document.getElementById('checkin').value;
+  const checkout = document.getElementById('checkout').value;
+  const roomType = document.getElementById('roomType').value;
+  const el = document.getElementById('priceEstimate');
+
+  if (!checkin || !checkout || !el) return;
+  if (new Date(checkin) >= new Date(checkout)) {
+    el.style.display = 'none';
+    return;
+  }
+
+  const fmtDMY = (dateStr) => {
+    const d = new Date(dateStr);
+    return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+  };
+
+  try {
+    const res = await fetch('/api/rooms/availability?check_in=' + fmtDMY(checkin) + '&check_out=' + fmtDMY(checkout) + '&available_only=false');
+    const data = await res.json();
+    if (!data.success) return;
+
+    const room = data.data.find(r => r.roomName === roomType);
+    if (!room) return;
+
+    const nights = room.priceBreakdown || [];
+    const tierLabels = { normal: 'Thường', weekend: 'Cuối tuần', holiday: 'Lễ', fallback: 'Cơ bản' };
+    const tierLabelsEn = { normal: 'Normal', weekend: 'Weekend', holiday: 'Holiday', fallback: 'Base' };
+    const hasMixedPrices = nights.length > 1 && new Set(nights.map(n => n.price)).size > 1;
+
+    el.textContent = '';
+
+    const summary = document.createElement('strong');
+    if (currentLang === 'vi') {
+      summary.textContent = 'Ước tính: ' + room.totalPrice.toLocaleString('vi-VN') + ' VNĐ';
+      el.appendChild(summary);
+      el.appendChild(document.createTextNode(' (' + nights.length + ' đêm)'));
+    } else {
+      summary.textContent = 'Estimate: ' + room.totalPrice.toLocaleString('vi-VN') + ' VND';
+      el.appendChild(summary);
+      el.appendChild(document.createTextNode(' (' + nights.length + ' nights)'));
+    }
+
+    if (hasMixedPrices) {
+      const detail = document.createElement('div');
+      detail.style.cssText = 'margin-top:6px; font-size:0.85rem; color:#666;';
+      const labels = currentLang === 'vi' ? tierLabels : tierLabelsEn;
+      nights.forEach((n, i) => {
+        const d = new Date(n.date);
+        const dayStr = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+        const label = n.holidayName || labels[n.tierType] || n.tierType;
+        if (i > 0) detail.appendChild(document.createTextNode('  '));
+        detail.appendChild(document.createTextNode(dayStr + ': ' + n.price.toLocaleString('vi-VN') + 'đ (' + label + ')'));
+      });
+      el.appendChild(detail);
+    }
+
+    el.style.display = 'block';
+  } catch (e) {
+    el.style.display = 'none';
+  }
+}
+
 // Gắn ngày mặc định
 window.addEventListener('DOMContentLoaded', () => {
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const fmt = d => d.toISOString().split('T')[0];
-  
+
   document.getElementById('checkin').value = fmt(today);
   document.getElementById('checkout').value = fmt(tomorrow);
+
+  document.getElementById('checkin').addEventListener('change', updatePriceEstimate);
+  document.getElementById('checkout').addEventListener('change', updatePriceEstimate);
+  document.getElementById('roomType').addEventListener('change', updatePriceEstimate);
+
+  updatePriceEstimate();
 });

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lịch Phòng - Windy Hotel Cửa Lò</title>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Be Vietnam Pro', sans-serif; margin: 0; padding: 20px; background-color: #FAFAF8; color: #2C1A0A; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #C9922B; padding-bottom: 15px; }
+    h1 { margin: 0; color: #1A0A0A; font-size: 1.8rem; }
+    .header-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .nav-link { padding: 8px 16px; color: #C9922B; text-decoration: none; border-radius: 4px; font-size: 0.9rem; font-weight: 500; border: 1px solid #C9922B; }
+    .nav-link:hover { background-color: #C9922B; color: white; }
+    .nav-link.active { background-color: #C9922B; color: white; }
+    .btn-logout { padding: 8px 16px; background-color: #8B1A1A; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; font-weight: 500; }
+    .btn-logout:hover { background-color: #C0392B; }
+
+    .controls-bar { background: white; border-radius: 8px; padding: 14px 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid rgba(201,146,43,0.15); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .mode-toggle { display: flex; gap: 0; }
+    .btn-mode { padding: 6px 14px; border: 1px solid #C9922B; background: white; color: #C9922B; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-mode:first-child { border-radius: 4px 0 0 4px; }
+    .btn-mode:last-child { border-radius: 0 4px 4px 0; }
+    .btn-mode.active { background-color: #C9922B; color: white; }
+    .btn-nav { padding: 6px 12px; border: 1px solid #ddd; background: white; border-radius: 4px; font-size: 0.85rem; cursor: pointer; font-family: inherit; color: #2C1A0A; }
+    .btn-nav:hover { background-color: #f5f5f5; }
+    .btn-today { padding: 6px 14px; border: 1px solid #C9922B; background: white; color: #C9922B; border-radius: 4px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-today:hover { background-color: #C9922B; color: white; }
+    .date-range-label { font-size: 0.95rem; font-weight: 600; color: #1A0A0A; margin-left: 8px; }
+
+    .legend { display: flex; gap: 20px; margin-bottom: 12px; font-size: 0.8rem; color: #555; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .legend-dot { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+    .ldot-av { background-color: #e8f5e9; border: 1px solid #a5d6a7; }
+    .ldot-oc { background-color: #dc3545; }
+    .ldot-mt { background-color: #fff3cd; border: 1px solid #ffc107; }
+    .ldot-cl { background-color: #d1ecf1; border: 1px solid #17a2b8; }
+    .ldot-un { background-color: #e2e3f1; border: 1px solid #9fa0c9; }
+
+    .calendar-container { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid rgba(201,146,43,0.15); overflow-x: auto; overflow-y: auto; max-height: calc(100vh - 220px); }
+
+    .cal-header-row { display: flex; border-bottom: 2px solid rgba(201,146,43,0.2); position: sticky; top: 0; z-index: 3; background: white; }
+    .cal-corner { width: 120px; min-width: 120px; padding: 10px 8px; font-weight: 700; font-size: 0.85rem; color: #1A0A0A; background: #F8F0E8; position: sticky; left: 0; z-index: 4; border-right: 1px solid rgba(201,146,43,0.2); }
+    .cal-date { padding: 8px 4px; text-align: center; font-size: 0.75rem; font-weight: 600; background: #F8F0E8; border-right: 1px solid #eee; display: flex; flex-direction: column; }
+    .cal-date .day-name { color: #888; font-size: 0.7rem; }
+    .cal-date .day-num { color: #1A0A0A; }
+    .cal-date.today { background: #C9922B; }
+    .cal-date.today .day-name, .cal-date.today .day-num { color: white; }
+    .cal-date.weekend { background: #f0e8d8; }
+
+    .type-group-header { display: flex; align-items: center; padding: 6px 12px; background: #F8F0E8; font-weight: 700; font-size: 0.85rem; color: #1A0A0A; border-top: 2px solid rgba(201,146,43,0.3); position: sticky; left: 0; z-index: 2; }
+
+    .room-row { display: flex; border-bottom: 1px solid #eee; position: relative; }
+    .room-row:hover { background-color: #fafaf5; }
+    .room-label { width: 120px; min-width: 120px; padding: 6px 8px; font-size: 0.8rem; font-weight: 600; color: #1A0A0A; position: sticky; left: 0; z-index: 2; background: white; border-right: 1px solid rgba(201,146,43,0.15); display: flex; flex-direction: column; justify-content: center; }
+    .room-row:hover .room-label { background-color: #fafaf5; }
+    .room-label .room-num { font-weight: 700; }
+    .room-label .room-lbl { font-size: 0.7rem; color: #999; }
+
+    .cells-row { display: flex; position: relative; flex: 1; min-width: 0; }
+    .cal-cell { border-right: 1px solid #eee; height: 36px; }
+    .cal-cell.cell-available { background-color: #e8f5e9; }
+    .cal-cell.cell-reserved { background-color: #fff3e0; }
+    .cal-cell.cell-maintenance { background-color: #fff3cd; }
+    .cal-cell.cell-cleaning { background-color: #d1ecf1; }
+    .cal-cell.weekend-col { opacity: 0.85; }
+
+    .booking-bar { position: absolute; top: 3px; height: 30px; background-color: #dc3545; color: white; font-size: 0.7rem; font-weight: 600; border-radius: 4px; display: flex; align-items: center; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 1; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .booking-bar:hover { opacity: 0.9; }
+    .booking-bar.bar-reserved { background-color: #ff9800; }
+
+    .unassigned-row { display: flex; border-bottom: 1px solid #eee; }
+    .unassigned-label { width: 120px; min-width: 120px; padding: 4px 8px; font-size: 0.75rem; color: #6b4a8c; font-style: italic; position: sticky; left: 0; z-index: 2; background: #f5f3fa; border-right: 1px solid rgba(201,146,43,0.15); display: flex; align-items: center; }
+    .unassigned-bar { position: absolute; top: 2px; height: 24px; background-color: #7c6bc4; color: white; font-size: 0.65rem; font-weight: 600; border-radius: 3px; display: flex; align-items: center; padding: 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 1; opacity: 0.8; }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: white; border-radius: 8px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.15); border: 1px solid rgba(201,146,43,0.15); }
+    .modal-content h3 { margin: 0 0 14px; color: #1A0A0A; font-size: 1.1rem; border-bottom: 2px solid #C9922B; padding-bottom: 8px; }
+    .modal-info p { margin: 6px 0; font-size: 0.9rem; }
+    .modal-info strong { color: #1A0A0A; }
+    .modal-actions { margin-top: 14px; display: flex; gap: 8px; }
+    .btn-modal { padding: 6px 14px; border: none; border-radius: 4px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; text-decoration: none; display: inline-block; }
+    .btn-link { background-color: #C9922B; color: white; }
+    .btn-link:hover { background-color: #a87820; }
+    .btn-close { background-color: #6c757d; color: white; }
+    .btn-close:hover { background-color: #5a6268; }
+
+    @media (max-width: 768px) {
+      .header { flex-direction: column; gap: 12px; }
+      .controls-bar { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Lịch Phòng Khách Sạn</h1>
+    <div class="header-actions">
+      <a href="/admin/bookings" class="nav-link">Đặt phòng</a>
+      <a href="/admin/rooms" class="nav-link">Quản lý phòng</a>
+      <a href="/admin/room-map" class="nav-link">Sơ đồ phòng</a>
+      <a href="/admin/room-calendar" class="nav-link active">Lịch phòng</a>
+      <a href="/admin/prices" class="nav-link">Bảng giá</a>
+      <a href="/admin/customers" class="nav-link">Khách hàng</a>
+      <a href="/admin/logout" class="btn-logout">Đăng xuất</a>
+    </div>
+  </div>
+
+  <div class="controls-bar">
+    <div class="mode-toggle">
+      <button class="btn-mode active" id="btnWeek" onclick="setMode('week')">Tuần</button>
+      <button class="btn-mode" id="btnMonth" onclick="setMode('month')">Tháng</button>
+    </div>
+    <button class="btn-nav" onclick="navigatePrev()">◀ Trước</button>
+    <button class="btn-today" onclick="navigateToday()">Hôm nay</button>
+    <button class="btn-nav" onclick="navigateNext()">Sau ▶</button>
+    <span class="date-range-label" id="dateRangeLabel"></span>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot ldot-av"></span> Trống</div>
+    <div class="legend-item"><span class="legend-dot" style="background-color:#ff9800;"></span> Đã đặt</div>
+    <div class="legend-item"><span class="legend-dot ldot-oc"></span> Đang ở</div>
+    <div class="legend-item"><span class="legend-dot ldot-mt"></span> Bảo trì</div>
+    <div class="legend-item"><span class="legend-dot ldot-cl"></span> Dọn dẹp</div>
+    <div class="legend-item"><span class="legend-dot ldot-un"></span> Chưa gán phòng</div>
+  </div>
+
+  <div class="calendar-container" id="calendarContainer"></div>
+
+  <div class="modal-overlay" id="infoModal" style="display:none" onclick="if(event.target===this)closeInfoModal()">
+    <div class="modal-content">
+      <h3 id="infoTitle">Chi tiết</h3>
+      <div class="modal-info" id="infoBody"></div>
+      <div class="modal-actions">
+        <a href="/admin/room-map" class="btn-modal btn-link">Xem sơ đồ phòng</a>
+        <button class="btn-modal btn-close" onclick="closeInfoModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main-admin-room-calendar.js"></script>
+</body>
+</html>
